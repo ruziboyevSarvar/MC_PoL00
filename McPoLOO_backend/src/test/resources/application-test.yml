@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:mcpoloo;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+app:
+  frontend-origin: http://localhost:3000
+  upload-dir: build/test-uploads
+  jwt:
+    secret: test-secret-test-secret-test-secret-test-secret-test-secret
+    expiration-minutes: 60
+  admin:
+    username: admin
+    password: admin12345

@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: mcpoloo-backend
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/categories
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8080
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: JPA_DDL_AUTO
+        value: update
+      - key: FRONTEND_ORIGINS
+        value: https://mcpoloo-frontend.onrender.com,http://localhost:3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: admin12345

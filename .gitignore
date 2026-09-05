@@ -1,0 +1,17 @@
+# Frontend
+McPoLOO_frontend/node_modules/
+McPoLOO_frontend/.next/
+McPoLOO_frontend/out/
+McPoLOO_frontend/tsconfig.tsbuildinfo
+
+# Backend
+McPoLOO_backend/target/
+McPoLOO_backend/uploads/
+McPoLOO_backend/build/
+
+# IDE / OS
+.idea/
+**/.git-disabled/
+*.iml
+.DS_Store
+Thumbs.db

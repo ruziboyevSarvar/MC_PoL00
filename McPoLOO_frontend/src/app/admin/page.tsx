@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+import { AdminPanel } from "@/components/admin/AdminPanel";
+
+export const metadata: Metadata = {
+  title: "Admin panel",
+  description: "Mc PoLOO mahsulot va kategoriya boshqaruvi."
+};
+
+export default function AdminPage() {
+  return <AdminPanel />;
+}
