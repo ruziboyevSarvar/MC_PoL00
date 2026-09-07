@@ -32,6 +32,7 @@ public class CategoryService {
     public CategoryResponse create(CategoryRequest request) {
         Category category = new Category();
         apply(category, request);
+        ensureSlugIsAvailable(category);
         return toResponse(categoryRepository.save(category));
     }
 
@@ -39,6 +40,7 @@ public class CategoryService {
     public CategoryResponse update(UUID id, CategoryRequest request) {
         Category category = categoryRepository.findById(id).orElseThrow(() -> new NotFoundException("Kategoriya topilmadi"));
         apply(category, request);
+        ensureSlugIsAvailable(category);
         return toResponse(category);
     }
 
@@ -70,5 +72,13 @@ public class CategoryService {
         category.setImageUrl(request.imageUrl());
         category.setActive(request.active());
         category.setSortOrder(request.sortOrder());
+    }
+
+    private void ensureSlugIsAvailable(Category category) {
+        categoryRepository.findBySlug(category.getSlug())
+                .filter(existing -> !existing.getId().equals(category.getId()))
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException("Bu kategoriya avval qo'shilgan. Nomini boshqacha kiriting.");
+                });
     }
 }

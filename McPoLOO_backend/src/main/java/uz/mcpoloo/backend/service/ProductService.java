@@ -71,6 +71,7 @@ public class ProductService {
     public ProductResponse create(ProductRequest request) {
         Product product = new Product();
         apply(product, request);
+        ensureSlugIsAvailable(product);
         return toResponse(productRepository.save(product));
     }
 
@@ -78,6 +79,7 @@ public class ProductService {
     public ProductResponse update(UUID id, ProductRequest request) {
         Product product = productRepository.findById(id).orElseThrow(() -> new NotFoundException("Mahsulot topilmadi"));
         apply(product, request);
+        ensureSlugIsAvailable(product);
         return toResponse(product);
     }
 
@@ -138,5 +140,13 @@ public class ProductService {
             attribute.setSortOrder(dto.sortOrder());
             return attribute;
         }).toList());
+    }
+
+    private void ensureSlugIsAvailable(Product product) {
+        productRepository.findBySlug(product.getSlug())
+                .filter(existing -> !existing.getId().equals(product.getId()))
+                .ifPresent(existing -> {
+                    throw new IllegalArgumentException("Bu mahsulot avval qo'shilgan. Nomi yoki modelini boshqacha kiriting.");
+                });
     }
 }

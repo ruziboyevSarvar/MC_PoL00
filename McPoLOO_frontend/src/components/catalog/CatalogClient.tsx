@@ -110,6 +110,25 @@ export function CatalogClient({ categories, page, currentCategory }: { categorie
           </select>
         </div>
       </div>
+      <section id="categories" className="mb-6 scroll-mt-24">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setParam("category", "")}
+            className={`h-10 rounded-full border px-4 text-sm font-bold transition ${params.get("category") ? "border-line bg-white text-ink hover:border-brass" : "border-ink bg-ink text-white"}`}
+          >
+            Barcha kategoriyalar
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setParam("category", category.slug)}
+              className={`h-10 rounded-full border px-4 text-sm font-bold transition ${params.get("category") === category.slug ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-brass"}`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
         <aside className="hidden rounded-lg border border-line bg-white p-5 lg:block">{filters}</aside>
         <section>

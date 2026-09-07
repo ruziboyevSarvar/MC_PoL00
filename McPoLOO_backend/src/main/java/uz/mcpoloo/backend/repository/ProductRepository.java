@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpecificationExecutor<Product> {
     Optional<Product> findBySlugAndStatus(String slug, ProductStatus status);
+    Optional<Product> findBySlug(String slug);
     Optional<Product> findByIdAndStatus(UUID id, ProductStatus status);
     boolean existsBySlug(String slug);
     List<Product> findTop8ByCategorySlugAndStatusNotAndIdNotOrderByCreatedAtDesc(String categorySlug, ProductStatus status, UUID id);

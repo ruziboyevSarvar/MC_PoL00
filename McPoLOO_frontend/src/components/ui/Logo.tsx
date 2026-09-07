@@ -1,15 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-3" aria-label="Mc PoLOO bosh sahifa">
-      <span className="grid h-11 w-11 place-items-center rounded-lg border border-line bg-ink text-[11px] font-black tracking-wide text-white shadow-sm">
-        MC
-      </span>
-      <span className="leading-none">
-        <span className="block text-lg font-black tracking-wide text-ink">Mc PoLOO</span>
-        <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-brass">Sanitary ware</span>
-      </span>
+    <Link href="/" className="flex shrink-0 items-center" aria-label="Mc PoLOO bosh sahifa">
+      <Image
+        src="/images/mcpoloo-logo.png"
+        alt="Mc PoLOO"
+        width={184}
+        height={76}
+        priority
+        className="h-12 w-auto object-contain"
+      />
     </Link>
   );
 }
