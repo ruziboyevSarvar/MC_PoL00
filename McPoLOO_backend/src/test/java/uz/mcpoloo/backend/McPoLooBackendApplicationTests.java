@@ -7,8 +7,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.mock.web.MockMultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import uz.mcpoloo.backend.domain.Category;
 import uz.mcpoloo.backend.domain.Product;
 import uz.mcpoloo.backend.dto.ProductRequest;
@@ -22,6 +27,9 @@ import java.util.List;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -40,6 +48,9 @@ class McPoLooBackendApplicationTests {
 
     @Autowired
     CategoryRepository categoryRepository;
+
+    @MockitoBean
+    S3Client s3Client;
 
     @Test
     void contextLoads() {
@@ -73,9 +84,42 @@ class McPoLooBackendApplicationTests {
     }
 
     @Test
+    void publicProductsHideInactiveCategoryProducts() throws Exception {
+        Category category = new Category();
+        category.setName("Hidden category");
+        category.setSlug("hidden-category");
+        category.setActive(false);
+        category.setSortOrder(99);
+        categoryRepository.save(category);
+        productRepository.save(testProduct("Hidden category product", "hidden-category-product", "HCP100", ProductStatus.ACTIVE, category));
+
+        mockMvc.perform(get("/api/products").param("q", "HCP100").param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
     void adminEndpointIsProtected() throws Exception {
         mockMvc.perform(get("/api/admin/products"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminUploadStoresImageInAcdnS3AndReturnsCdnUrl() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "sink.webp",
+                "image/webp",
+                new byte[]{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P'}
+        );
+
+        mockMvc.perform(multipart("/api/admin/uploads/images").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.objectKey", startsWith("products/")))
+                .andExpect(jsonPath("$.url", startsWith("https://uzbpower.vvv.uz/products/")));
+
+        verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test

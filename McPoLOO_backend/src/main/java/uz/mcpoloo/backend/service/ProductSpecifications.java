@@ -14,8 +14,22 @@ public final class ProductSpecifications {
         return (root, query, cb) -> status == null ? cb.conjunction() : cb.equal(root.get("status"), status);
     }
 
+    public static Specification<Product> publicAvailability(String availability) {
+        return (root, query, cb) -> {
+            if (availability == null || availability.isBlank()) return cb.conjunction();
+            return switch (availability) {
+                case "in-stock" -> cb.equal(root.get("status"), ProductStatus.ACTIVE);
+                case "out-of-stock" -> cb.equal(root.get("status"), ProductStatus.OUT_OF_STOCK);
+                default -> cb.conjunction();
+            };
+        };
+    }
+
     public static Specification<Product> publicVisible() {
-        return (root, query, cb) -> cb.notEqual(root.get("status"), ProductStatus.INACTIVE);
+        return (root, query, cb) -> cb.and(
+                cb.notEqual(root.get("status"), ProductStatus.INACTIVE),
+                cb.isTrue(root.join("category").get("active"))
+        );
     }
 
     public static Specification<Product> categorySlug(String slug) {

@@ -76,12 +76,20 @@ export function AdminPanel() {
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [productPage, setProductPage] = useState<PageResponse<Product> | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
+  const [adminPage, setAdminPage] = useState(0);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [categoryId, setCategoryId] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [categorySlug, setCategorySlug] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [categoryImageUrl, setCategoryImageUrl] = useState("");
+  const [categoryActive, setCategoryActive] = useState(true);
+  const [categorySortOrder, setCategorySortOrder] = useState("");
   const [notice, setNotice] = useState("");
 
   const logout = useCallback(() => {
@@ -91,11 +99,19 @@ export function AdminPanel() {
 
   const load = useCallback(async () => {
     try {
+      const productParams = new URLSearchParams({
+        page: String(adminPage),
+        size: "20"
+      });
+      if (query) productParams.set("q", query);
+      if (statusFilter) productParams.set("status", statusFilter);
+      if (categoryFilter) productParams.set("category", categoryFilter);
       const [productPage, categoryList] = await Promise.all([
-        adminFetch<PageResponse<Product>>(`/admin/products?size=60${query ? `&q=${encodeURIComponent(query)}` : ""}`),
+        adminFetch<PageResponse<Product>>(`/admin/products?${productParams.toString()}`),
         adminFetch<Category[]>("/admin/categories")
       ]);
       setProducts(productPage.content);
+      setProductPage(productPage);
       setCategories(categoryList);
       setForm((current) => {
         if (current.categoryId || !categoryList[0]) return current;
@@ -106,7 +122,7 @@ export function AdminPanel() {
       setNotice(message);
       if (message.includes("Sessiya")) logout();
     }
-  }, [logout, query]);
+  }, [adminPage, categoryFilter, logout, query, statusFilter]);
 
   useEffect(() => {
     if (token) void load();
@@ -185,16 +201,20 @@ export function AdminPanel() {
         body: JSON.stringify({
           name: categoryName,
           slug: categorySlug,
-          description: "",
-          imageUrl: "",
-          active: true,
-          sortOrder: categories.length + 1
+          description: categoryDescription,
+          imageUrl: categoryImageUrl,
+          active: categoryActive,
+          sortOrder: Number(categorySortOrder || categories.length + 1)
         })
       });
       setNotice(categoryId ? "Kategoriya yangilandi" : "Kategoriya qo'shildi");
       setCategoryId("");
       setCategoryName("");
       setCategorySlug("");
+      setCategoryDescription("");
+      setCategoryImageUrl("");
+      setCategoryActive(true);
+      setCategorySortOrder("");
       await load();
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Kategoriya saqlanmadi");
@@ -202,6 +222,7 @@ export function AdminPanel() {
   }
 
   async function removeProduct(id: string) {
+    if (!window.confirm("Mahsulotni o'chirishni tasdiqlaysizmi?")) return;
     try {
       await adminFetch(`/admin/products/${id}`, { method: "DELETE" });
       setNotice("Mahsulot o'chirildi");
@@ -212,6 +233,7 @@ export function AdminPanel() {
   }
 
   async function removeCategory(id: string) {
+    if (!window.confirm("Kategoriyani o'chirishni tasdiqlaysizmi?")) return;
     try {
       await adminFetch(`/admin/categories/${id}`, { method: "DELETE" });
       setNotice("Kategoriya o'chirildi");
@@ -293,13 +315,16 @@ export function AdminPanel() {
     setCategoryId("");
     setCategoryName("");
     setCategorySlug("");
+    setCategoryDescription("");
+    setCategoryImageUrl("");
+    setCategoryActive(true);
+    setCategorySortOrder("");
   }
 
-  const totalValue = useMemo(() => products.reduce((sum, item) => sum + item.price, 0), [products]);
+  const featuredProducts = useMemo(() => products.filter((item) => item.featured).length, [products]);
   const activeProducts = useMemo(() => products.filter((item) => item.status === "ACTIVE").length, [products]);
   const activePercent = products.length ? Math.round((activeProducts / products.length) * 100) : 0;
   const galleryImages = useMemo(() => form.galleryText.split("\n").map((url) => url.trim()).filter(Boolean), [form.galleryText]);
-  const selectedCategoryName = categories.find((category) => category.id === form.categoryId)?.name ?? "Kategoriya tanlang";
 
   if (!token) {
     return (
@@ -354,10 +379,10 @@ export function AdminPanel() {
         )}
 
         <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard icon={<Package className="h-5 w-5" />} label="Mahsulotlar soni" value={products.length} helper="Jami mahsulotlar" />
+          <StatCard icon={<Package className="h-5 w-5" />} label="Mahsulotlar soni" value={productPage?.totalElements ?? products.length} helper="Filter bo'yicha jami" />
           <StatCard icon={<Tag className="h-5 w-5" />} label="Kategoriyalar" value={categories.length} helper="Katalog kategoriyalari" />
-          <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Faol mahsulotlar" value={activeProducts} helper="Aktiv mahsulotlar" percent={activePercent} positive />
-          <StatCard icon={<Database className="h-5 w-5" />} label="Katalog qiymati" value={formatPrice(totalValue)} helper="Jami mahsulotlar qiymati" />
+          <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Faol mahsulotlar" value={activeProducts} helper="Joriy sahifadagi aktivlar" percent={activePercent} positive />
+          <StatCard icon={<Database className="h-5 w-5" />} label="Top mahsulotlar" value={featuredProducts} helper="Joriy sahifadagi top belgisi" />
         </section>
 
         <div className="mt-5 grid flex-1 gap-5 xl:grid-cols-[minmax(420px,0.92fr)_minmax(560px,1.08fr)]">
@@ -469,15 +494,22 @@ export function AdminPanel() {
             <div className="rounded-[8px] border border-line bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <SectionTitle icon={<Folder className="h-5 w-5" />} title="Kategoriyalar" subtitle="Mahsulot kategoriyalarini boshqarish" />
-                <button type="button" onClick={() => { setCategoryId(""); setCategoryName(selectedCategoryName === "Kategoriya tanlang" ? "" : selectedCategoryName); setCategorySlug(""); }} className="flex h-10 items-center gap-2 rounded-[8px] bg-brass px-5 text-sm font-extrabold text-white shadow-sm">
+                <button type="button" onClick={() => { setCategoryId(""); setCategoryName(""); setCategorySlug(""); setCategoryDescription(""); setCategoryImageUrl(""); setCategoryActive(true); setCategorySortOrder(String(categories.length + 1)); }} className="flex h-10 items-center gap-2 rounded-[8px] bg-brass px-5 text-sm font-extrabold text-white shadow-sm">
                   <Plus className="h-4 w-4" />
                   Yangi kategoriya
                 </button>
               </div>
-              <form onSubmit={saveCategory} className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+              <form onSubmit={saveCategory} className="mt-4 grid gap-3 lg:grid-cols-2">
                 <input required value={categoryName} onChange={(e) => setCategoryName(e.target.value)} placeholder="Kategoriya nomi" className="admin-input" />
                 <input value={categorySlug} onChange={(e) => setCategorySlug(e.target.value)} placeholder="Slug" className="admin-input" />
-                <button className="h-11 rounded-[8px] bg-ink px-5 text-sm font-extrabold text-white">{categoryId ? "Saqlash" : "Qo'shish"}</button>
+                <input value={categoryDescription} onChange={(e) => setCategoryDescription(e.target.value)} placeholder="Tavsif" className="admin-input" />
+                <input value={categoryImageUrl} onChange={(e) => setCategoryImageUrl(e.target.value)} placeholder="Rasm URL" className="admin-input" />
+                <input type="number" value={categorySortOrder} onChange={(e) => setCategorySortOrder(e.target.value)} placeholder="Tartib raqami" className="admin-input" />
+                <label className="flex h-11 items-center gap-2 rounded-[8px] border border-line px-3 text-sm font-bold">
+                  <input type="checkbox" checked={categoryActive} onChange={(e) => setCategoryActive(e.target.checked)} className="h-4 w-4 accent-brass" />
+                  Public saytda ko&apos;rsatish
+                </label>
+                <button className="h-11 rounded-[8px] bg-ink px-5 text-sm font-extrabold text-white lg:col-span-2">{categoryId ? "Saqlash" : "Qo'shish"}</button>
               </form>
               <div className="mt-4 divide-y divide-line overflow-hidden rounded-[8px] border border-line">
                 {categories.map((category, index) => (
@@ -489,7 +521,7 @@ export function AdminPanel() {
                     <span className="truncate text-xs font-medium text-muted">/{category.slug}</span>
                     <span className="flex items-center gap-2">
                       <span className="hidden min-w-20 text-right text-xs font-semibold text-muted sm:inline">{products.filter((product) => product.category.id === category.id).length} mahsulot</span>
-                      <button onClick={() => { setCategoryId(category.id); setCategoryName(category.name); setCategorySlug(category.slug); }} className="grid h-8 w-8 place-items-center rounded-[8px] border border-line bg-white" aria-label="Kategoriya tahrirlash">
+                      <button onClick={() => { setCategoryId(category.id); setCategoryName(category.name); setCategorySlug(category.slug); setCategoryDescription(category.description ?? ""); setCategoryImageUrl(category.imageUrl ?? ""); setCategoryActive(category.active); setCategorySortOrder(String(category.sortOrder)); }} className="grid h-8 w-8 place-items-center rounded-[8px] border border-line bg-white" aria-label="Kategoriya tahrirlash">
                         <Edit3 className="h-4 w-4" />
                       </button>
                       <button onClick={() => removeCategory(category.id)} className="grid h-8 w-8 place-items-center rounded-[8px] border border-red-100 bg-white text-red-600" aria-label="Kategoriya o'chirish">
@@ -504,11 +536,21 @@ export function AdminPanel() {
             <div className="rounded-[8px] border border-line bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <SectionTitle icon={<Package className="h-5 w-5" />} title="Mahsulotlar ro'yxati" subtitle="Katalogdagi barcha mahsulotlar" />
-                <form onSubmit={(event) => { event.preventDefault(); void load(); }} className="flex flex-wrap gap-2">
+                <form onSubmit={(event) => { event.preventDefault(); setAdminPage(0); void load(); }} className="flex flex-wrap gap-2">
                   <label className="flex h-11 min-w-[260px] items-center gap-2 rounded-[8px] border border-line bg-white px-3">
                     <Search className="h-4 w-4 text-muted" />
-                    <input value={query} onChange={(e) => setQuery(e.target.value)} onBlur={load} placeholder="Mahsulot qidirish..." className="w-full bg-transparent text-sm outline-none" />
+                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Mahsulot qidirish..." className="w-full bg-transparent text-sm outline-none" />
                   </label>
+                  <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setAdminPage(0); }} className="h-11 rounded-[8px] border border-line bg-white px-3 text-sm font-bold outline-none">
+                    <option value="">Barcha status</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+                  </select>
+                  <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setAdminPage(0); }} className="h-11 rounded-[8px] border border-line bg-white px-3 text-sm font-bold outline-none">
+                    <option value="">Barcha kategoriya</option>
+                    {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
+                  </select>
                   <button className="flex h-11 items-center gap-2 rounded-[8px] border border-line bg-white px-4 text-sm font-extrabold">
                     <Filter className="h-4 w-4" />
                     Filtr
@@ -563,11 +605,11 @@ export function AdminPanel() {
                 </table>
               </div>
               <div className="mt-4 flex items-center justify-between text-xs font-semibold text-muted">
-                <span>{products.length} ta mahsulot ko&apos;rsatilmoqda</span>
+                <span>{productPage?.totalElements ?? products.length} tadan {products.length} tasi ko&apos;rsatilmoqda</span>
                 <span className="flex items-center gap-2">
-                  <button className="grid h-8 w-8 place-items-center rounded-[8px] border border-line bg-[#f7f7f5] text-muted" type="button">&lt;</button>
-                  <button className="grid h-8 w-8 place-items-center rounded-[8px] border border-brass bg-white text-brass" type="button">1</button>
-                  <button className="grid h-8 w-8 place-items-center rounded-[8px] border border-line bg-[#f7f7f5] text-muted" type="button">&gt;</button>
+                  <button disabled={(productPage?.page ?? 0) <= 0} onClick={() => setAdminPage((page) => Math.max(0, page - 1))} className="grid h-8 w-8 place-items-center rounded-[8px] border border-line bg-[#f7f7f5] text-muted disabled:opacity-40" type="button">&lt;</button>
+                  <span className="grid h-8 min-w-8 place-items-center rounded-[8px] border border-brass bg-white px-2 text-brass">{(productPage?.page ?? 0) + 1} / {productPage?.totalPages ?? 1}</span>
+                  <button disabled={!productPage || productPage.page >= productPage.totalPages - 1} onClick={() => setAdminPage((page) => page + 1)} className="grid h-8 w-8 place-items-center rounded-[8px] border border-line bg-[#f7f7f5] text-muted disabled:opacity-40" type="button">&gt;</button>
                 </span>
               </div>
             </div>

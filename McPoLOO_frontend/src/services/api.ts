@@ -7,8 +7,16 @@ function normalizeBaseUrl(value: string | undefined, fallback: string) {
 
 export const API_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL, "http://localhost:8080/api");
 const ASSET_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_ASSET_URL, API_URL.replace(/\/api\/?$/, ""));
-const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== "false" || process.env.NODE_ENV === "development";
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true" || (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_DEMO_MODE !== "false");
 const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? 12000);
+
+const emptyProductPage: PageResponse<Product> = {
+  totalElements: 0,
+  totalPages: 1,
+  page: 0,
+  size: 12,
+  content: []
+};
 
 async function read<T>(path: string, demoFallback: T, productionFallback: T, init?: RequestInit): Promise<T> {
   if (DEMO_MODE) {
@@ -39,8 +47,8 @@ function windowOrNodeSetTimeout(callback: () => void, ms: number) {
 }
 
 export async function getCategories() {
-  const apiCategories = await read<Category[]>("/categories", [], []);
-  return mergeCategories(apiCategories);
+  if (DEMO_MODE) return normalizeApiData(mockCategories) as Category[];
+  return read<Category[]>("/categories", [], []);
 }
 
 export async function getProducts(params: URLSearchParams) {
@@ -48,12 +56,11 @@ export async function getProducts(params: URLSearchParams) {
 
   try {
     const apiParams = new URLSearchParams(params);
-    apiParams.set("page", "0");
-    apiParams.set("size", "40");
-    const apiPage = await fetchApi<PageResponse<Product>>(`/products?${apiParams.toString()}`);
-    return mergeProductPage(apiPage.content, params);
+    if (!apiParams.get("page")) apiParams.set("page", "0");
+    if (!apiParams.get("size")) apiParams.set("size", "12");
+    return await fetchApi<PageResponse<Product>>(`/products?${apiParams.toString()}`);
   } catch {
-    return mockPage(params);
+    return { ...emptyProductPage, page: Math.max(Number(params.get("page") || 0), 0), size: Math.max(Number(params.get("size") || 12), 1) };
   }
 }
 
@@ -64,7 +71,7 @@ export async function getProductBySlug(slug: string) {
   try {
     return await fetchApi<Product>(`/products/slug/${slug}`);
   } catch {
-    return normalizeApiData(staticProduct) as Product | null;
+    return null;
   }
 }
 
@@ -74,10 +81,9 @@ export async function getRelated(slug: string) {
   if (DEMO_MODE) return normalizeApiData(staticRelated) as Product[];
 
   try {
-    const apiRelated = await fetchApi<Product[]>(`/products/slug/${slug}/related`);
-    return mergeProducts(apiRelated, staticRelated).slice(0, 8);
+    return await fetchApi<Product[]>(`/products/slug/${slug}/related`);
   } catch {
-    return normalizeApiData(staticRelated) as Product[];
+    return [];
   }
 }
 
@@ -136,46 +142,4 @@ function normalizeApiData(data: unknown): unknown {
     return normalizeProduct(data as Product);
   }
   return data;
-}
-
-function mergeCategories(apiCategories: Category[]) {
-  const bySlug = new Map<string, Category>();
-  mockCategories.forEach((category) => bySlug.set(category.slug, normalizeApiData(category) as Category));
-  apiCategories.forEach((category) => bySlug.set(category.slug, category));
-  return Array.from(bySlug.values()).sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-}
-
-function mergeProducts(apiProducts: Product[], staticProducts: Product[]) {
-  const bySlug = new Map<string, Product>();
-  apiProducts.forEach((product) => bySlug.set(product.slug, product));
-  staticProducts.forEach((product) => {
-    if (!bySlug.has(product.slug)) bySlug.set(product.slug, normalizeApiData(product) as Product);
-  });
-  return Array.from(bySlug.values());
-}
-
-function mergeProductPage(apiProducts: Product[], params: URLSearchParams): PageResponse<Product> {
-  const staticParams = new URLSearchParams(params);
-  staticParams.set("page", "0");
-  staticParams.set("size", String(mockProducts.length));
-  const staticProducts = mockPage(staticParams).content;
-  const content = sortProducts(mergeProducts(apiProducts, staticProducts), params.get("sort"));
-  const page = Math.max(Number(params.get("page") || 0), 0);
-  const size = Math.max(Number(params.get("size") || 12), 1);
-  const totalElements = content.length;
-  const totalPages = Math.max(Math.ceil(totalElements / size), 1);
-  return {
-    totalElements,
-    totalPages,
-    page,
-    size,
-    content: content.slice(page * size, page * size + size)
-  };
-}
-
-function sortProducts(products: Product[], sort: string | null) {
-  const data = [...products];
-  if (sort === "price-asc") return data.sort((a, b) => a.price - b.price);
-  if (sort === "price-desc") return data.sort((a, b) => b.price - a.price);
-  return data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }

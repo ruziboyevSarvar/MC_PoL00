@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import uz.mcpoloo.backend.dto.ErrorResponse;
 import uz.mcpoloo.backend.service.NotFoundException;
+import uz.mcpoloo.backend.service.StorageException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -35,6 +36,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ErrorResponse> dataIntegrity() {
         return ResponseEntity.badRequest().body(ErrorResponse.of(400, "Ma'lumot boshqa yozuvlarga bog'langan yoki unique qiymat takrorlangan"));
+    }
+
+    @ExceptionHandler(StorageException.class)
+    ResponseEntity<ErrorResponse> storage(StorageException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.of(500, ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

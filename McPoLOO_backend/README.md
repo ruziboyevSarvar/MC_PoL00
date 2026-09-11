@@ -53,16 +53,22 @@ JWT_SECRET=long-random-secret-at-least-32-characters
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=secure-admin-password
 FRONTEND_ORIGINS=https://mcpoloo-frontend.onrender.com,http://localhost:3000
+ACDN_S3_ENDPOINT=https://storage.acdn.uz
+ACDN_S3_REGION=uz
+ACDN_S3_BUCKET=my-mcpoloo-storage
+ACDN_S3_ACCESS_KEY=...
+ACDN_S3_SECRET_KEY=...
+ACDN_CDN_BASE_URL=https://uzbpower.vvv.uz
 ```
 
 Docker deployments also accept provider-style URLs such as `postgres://user:password@host:port/database`; the entrypoint converts them before Spring Boot starts.
 
-The first admin user is created from `ADMIN_USERNAME` and `ADMIN_PASSWORD` when the database is empty. If `ADMIN_PASSWORD` is not set, the current deployment fallback is `admin12345`; change it in Render for a real public deployment.
+The first admin user is created from `ADMIN_USERNAME` and `ADMIN_PASSWORD` when the database is empty. In the production profile, `ADMIN_PASSWORD` must be provided through the deployment environment.
 
 After deployment, the frontend must point to the backend:
 
 ```text
 NEXT_PUBLIC_API_URL=https://mcpoloo-backend.onrender.com/api
-NEXT_PUBLIC_ASSET_URL=https://mcpoloo-backend.onrender.com
+NEXT_PUBLIC_ASSET_URL=https://uzbpower.vvv.uz
 NEXT_PUBLIC_DEMO_MODE=false
 ```

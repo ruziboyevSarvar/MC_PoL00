@@ -3,12 +3,19 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { getCategories, getProducts } from "@/services/api";
+import { getSiteUrl } from "@/utils/url";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const categories = await getCategories();
   const category = categories.find((item) => item.slug === slug);
-  return { title: category ? category.name : "Kategoriya", description: category?.description };
+  return {
+    title: category ? category.name : "Kategoriya",
+    description: category?.description,
+    alternates: {
+      canonical: `${getSiteUrl()}/catalog/${slug}`
+    }
+  };
 }
 
 export default async function CategoryPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {

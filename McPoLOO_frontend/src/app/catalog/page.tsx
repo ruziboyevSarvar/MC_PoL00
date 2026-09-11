@@ -3,10 +3,14 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
 import { getCategories, getProducts } from "@/services/api";
+import { getSiteUrl } from "@/utils/url";
 
 export const metadata: Metadata = {
   title: "Katalog",
-  description: "Mc PoLOO mahsulot katalogi: kategoriya, narx, rang va model bo'yicha qidiruv."
+  description: "Mc PoLOO mahsulot katalogi: kategoriya, narx, rang va model bo'yicha qidiruv.",
+  alternates: {
+    canonical: `${getSiteUrl()}/catalog`
+  }
 };
 
 export default async function CatalogPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

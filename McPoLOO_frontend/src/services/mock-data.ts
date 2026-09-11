@@ -141,6 +141,7 @@ export function mockPage(params: URLSearchParams): PageResponse<Product> {
   const q = params.get("q")?.toLowerCase();
   const category = params.get("category");
   const color = params.get("color");
+  const availability = params.get("availability");
   const brand = params.get("brand")?.toLowerCase();
   const min = Number(params.get("minPrice") || 0);
   const max = Number(params.get("maxPrice") || 0);
@@ -153,8 +154,11 @@ export function mockPage(params: URLSearchParams): PageResponse<Product> {
     const matchesCategory = !category || item.category.slug === category;
     const matchesBrand = !brand || item.brand.toLowerCase() === brand;
     const matchesColor = !color || item.attributes.some((attr) => attr.name.toLowerCase().includes("rang") && attr.value.toLowerCase() === color.toLowerCase());
+    const matchesAvailability = !availability
+      || (availability === "in-stock" && item.status === "ACTIVE")
+      || (availability === "out-of-stock" && item.status === "OUT_OF_STOCK");
     const matchesPrice = (!min || item.price >= min) && (!max || item.price <= max);
-    return visible && matchesQ && matchesCategory && matchesBrand && matchesColor && matchesPrice;
+    return visible && matchesQ && matchesCategory && matchesBrand && matchesColor && matchesAvailability && matchesPrice;
   });
   if (sort === "price-asc") data = data.sort((a, b) => a.price - b.price);
   if (sort === "price-desc") data = data.sort((a, b) => b.price - a.price);

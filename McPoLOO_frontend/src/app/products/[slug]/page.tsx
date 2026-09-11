@@ -8,6 +8,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
 import { getProductBySlug, getRelated } from "@/services/api";
 import { formatPrice } from "@/utils/format";
+import { getSiteUrl } from "@/utils/url";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -16,6 +17,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${product.name} ${product.model}`,
     description: `${product.brand} ${product.model} narxi va texnik xususiyatlari.`,
+    alternates: {
+      canonical: `${getSiteUrl()}/products/${product.slug}`
+    },
     openGraph: { title: product.name, images: [product.mainImageUrl] }
   };
 }

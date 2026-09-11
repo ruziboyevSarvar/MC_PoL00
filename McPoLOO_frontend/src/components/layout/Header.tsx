@@ -10,8 +10,7 @@ import { siteConfig } from "@/utils/site-config";
 const nav = [
   ["Katalog", "/catalog"],
   ["Kategoriyalar", "/catalog#categories"],
-  ["Kontaktlar", "#contact"],
-  ["Admin", "/admin"]
+  ["Kontaktlar", "#contact"]
 ];
 
 export function Header() {

@@ -35,13 +35,14 @@ public class PublicCatalogController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String color,
+            @RequestParam(required = false) String availability,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "new") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size
     ) {
-        return productService.publicProducts(q, category, brand, color, minPrice, maxPrice, pageable(sort, page, size));
+        return productService.publicProducts(q, category, brand, color, availability, minPrice, maxPrice, pageable(sort, page, size));
     }
 
     @GetMapping("/products/{id}")
@@ -61,7 +62,7 @@ public class PublicCatalogController {
 
     @GetMapping("/categories/{slug}/products")
     public PageResponse<ProductResponse> categoryProducts(@PathVariable String slug, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "12") int size) {
-        return productService.publicProducts(null, slug, null, null, null, null, PageRequest.of(page, Math.min(size, 40), Sort.by(Sort.Direction.DESC, "createdAt")));
+        return productService.publicProducts(null, slug, null, null, null, null, null, PageRequest.of(page, Math.min(size, 40), Sort.by(Sort.Direction.DESC, "createdAt")));
     }
 
     private PageRequest pageable(String sort, int page, int size) {

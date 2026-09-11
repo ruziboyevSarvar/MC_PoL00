@@ -7,8 +7,6 @@ import { Category, PageResponse, Product } from "@/types/catalog";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
 import { ProductSkeleton } from "@/components/product/ProductSkeleton";
 
-const colors = ["White", "Black", "Gold", "Chrome"];
-
 export function CatalogClient({ categories, page, currentCategory }: { categories: Category[]; page: PageResponse<Product>; currentCategory?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,6 +51,20 @@ export function CatalogClient({ categories, page, currentCategory }: { categorie
     setParam("page", String(nextPage), false);
   }
 
+  const colors = useMemo(() => {
+    const values = new Set<string>();
+    const selected = params.get("color");
+    if (selected) values.add(selected);
+    page.content.forEach((product) => {
+      product.attributes.forEach((attribute) => {
+        if (attribute.name.toLowerCase().includes("rang") && attribute.value.trim()) {
+          values.add(attribute.value.trim());
+        }
+      });
+    });
+    return Array.from(values).sort((a, b) => a.localeCompare(b));
+  }, [page.content, params]);
+
   const filters = (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -79,6 +91,14 @@ export function CatalogClient({ categories, page, currentCategory }: { categorie
         <select value={params.get("color") ?? ""} onChange={(event) => setParam("color", event.target.value)} className="h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-brass">
           <option value="">Barchasi</option>
           {colors.map((color) => <option key={color} value={color}>{color}</option>)}
+        </select>
+      </label>
+      <label className="grid gap-2 text-sm font-semibold">
+        Mavjudlik
+        <select value={params.get("availability") ?? ""} onChange={(event) => setParam("availability", event.target.value)} className="h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-brass">
+          <option value="">Barchasi</option>
+          <option value="in-stock">Mavjud</option>
+          <option value="out-of-stock">Mavjud emas</option>
         </select>
       </label>
       <div className="grid grid-cols-2 gap-3">

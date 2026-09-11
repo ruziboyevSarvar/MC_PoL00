@@ -25,9 +25,21 @@ services:
         value: update
       - key: FRONTEND_ORIGINS
         value: https://mcpoloo-frontend-38zy.onrender.com,http://localhost:3000
+      - key: ACDN_S3_ENDPOINT
+        value: https://storage.acdn.uz
+      - key: ACDN_S3_REGION
+        value: uz
+      - key: ACDN_S3_BUCKET
+        value: my-mcpoloo-storage
+      - key: ACDN_S3_ACCESS_KEY
+        sync: false
+      - key: ACDN_S3_SECRET_KEY
+        sync: false
+      - key: ACDN_CDN_BASE_URL
+        value: https://uzbpower.vvv.uz
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD
-        value: admin12345
+        sync: false

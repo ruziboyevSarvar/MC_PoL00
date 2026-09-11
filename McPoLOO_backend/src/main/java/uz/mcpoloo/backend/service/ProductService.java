@@ -27,12 +27,13 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ProductResponse> publicProducts(String q, String category, String brand, String color, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+    public PageResponse<ProductResponse> publicProducts(String q, String category, String brand, String color, String availability, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
         Specification<Product> spec = ProductSpecifications.publicVisible()
                 .and(ProductSpecifications.search(q))
                 .and(ProductSpecifications.categorySlug(category))
                 .and(ProductSpecifications.brand(brand))
                 .and(ProductSpecifications.color(color))
+                .and(ProductSpecifications.publicAvailability(availability))
                 .and(ProductSpecifications.priceBetween(minPrice, maxPrice));
         Page<ProductResponse> data = productRepository.findAll(spec, pageable).map(this::toResponse);
         return PageResponse.from(data);

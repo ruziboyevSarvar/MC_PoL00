@@ -44,7 +44,7 @@ DATABASE_USERNAME=postgres
 DATABASE_PASSWORD=postgres
 JWT_SECRET=replace-with-a-long-secret
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin12345
+ADMIN_PASSWORD=replace-with-a-secure-admin-password
 FRONTEND_ORIGIN=http://localhost:3000
 ```
 
@@ -91,14 +91,14 @@ Steps:
 3. Click New, then Blueprint.
 4. Select this GitHub repository.
 5. Render will read `render.yaml`.
-6. During setup, enter a secure `ADMIN_PASSWORD`.
+6. During setup, enter secure `ADMIN_PASSWORD`, `ACDN_S3_ACCESS_KEY`, and `ACDN_S3_SECRET_KEY` values.
 7. Deploy the blueprint.
 
 The frontend is configured to call:
 
 ```text
 NEXT_PUBLIC_API_URL=https://mcpoloo-backend.onrender.com/api
-NEXT_PUBLIC_ASSET_URL=https://mcpoloo-backend.onrender.com
+NEXT_PUBLIC_ASSET_URL=https://uzbpower.vvv.uz
 NEXT_PUBLIC_DEMO_MODE=false
 NEXT_PUBLIC_SITE_URL=https://mcpoloo-frontend.onrender.com
 ```
